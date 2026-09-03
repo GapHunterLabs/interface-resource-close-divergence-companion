@@ -1,5 +1,6 @@
 package dev.gaphunter.interfaceresourceclosedivergencecompanion.detect
 
+import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.Project
 import com.intellij.psi.JavaRecursiveElementWalkingVisitor
 import com.intellij.psi.PsiClassType
@@ -26,6 +27,12 @@ import dev.gaphunter.interfaceresourceclosedivergencecompanion.model.DivergenceH
  * looks up EACH real implementation's own summary for that same
  * parameter position and flags the call site when they disagree on
  * whether the resource is guaranteed closed.
+ *
+ * Calls [ProgressManager.checkCanceled] before each per-call-site
+ * [ClassInheritorsSearch] -- confirmed real feedback that an
+ * uncancellable index search per call site is a real freeze risk on a
+ * large project with many call sites through a widely-implemented
+ * interface.
  */
 object InterfaceResourceCloseDivergenceFinder {
 
@@ -55,6 +62,10 @@ object InterfaceResourceCloseDivergenceFinder {
         val resourceParamIndex = interfaceMethod.parameterList.parameters.indexOfFirst { ResourceStateEngine.isResourceType(it.type) }
         if (resourceParamIndex < 0) return null
 
+        // Confirmed real feedback: this index search runs once per interface-typed,
+        // resource-taking call site visited -- checkCanceled so a project with many
+        // such call sites through a widely-implemented interface stays interruptible.
+        ProgressManager.checkCanceled()
         val implementations = ClassInheritorsSearch.search(interfaceClass, GlobalSearchScope.projectScope(project), true)
             .findAll()
             .filter { !it.isInterface && !it.hasModifierProperty(PsiModifier.ABSTRACT) }
