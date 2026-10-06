@@ -1,0 +1,10 @@
+<html>
+<body>
+Reports a call through an interface-typed reference that passes a resource (a JDBC object or an I/O stream)
+when some implementations of the method close it on every path and at least one other never does.
+<!-- tooltip end -->
+<p>The interface type does not say which behavior the caller gets once dependency injection swaps implementations,
+so the resource may leak with one of them (CWE-772). Every concrete implementation in the project is resolved and
+analyzed.</p>
+</body>
+</html>
